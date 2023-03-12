@@ -11,6 +11,14 @@ pub struct WinSize {
     h: f32,
 }
 
+#[derive(Component)]
+struct Player;
+
+#[derive(Component)]
+struct Ball;
+
+impl Player {}
+
 const SPRITE_SIZE: BlockSize = BlockSize{w:100., h:25.};
 
 fn main() {
@@ -24,6 +32,7 @@ fn main() {
     }))
     .add_startup_system(setup)
     .add_system(add_player_get_window)
+    .add_system(move_player)
     .run();
 }
 
@@ -48,4 +57,24 @@ fn add_player_get_window(mut commands: Commands, window_query: Query<&Window>) {
         transform: Transform::from_translation(Vec3::new(-50., -win_h / 2. + SPRITE_SIZE.h, 0.)),
         ..default()
     });
+}
+
+fn move_player(keyboard_input: Res<Input<KeyCode>>, mut query: Query<&mut Transform, With<Player>>) {
+    let mut player_transform = query.single_mut();
+    let mut direction = 0.0;
+
+    if keyboard_input.pressed(KeyCode::Left) || keyboard_input.pressed(KeyCode::A) {
+        direction -= 1.0;
+    }
+
+    if keyboard_input.pressed(KeyCode::Right) || keyboard_input.pressed(KeyCode::D) {
+        direction += 1.0;
+    }
+
+    let new_paddle_position = player_transform.translation.x + direction * 500.;
+
+    let left_bound = 800.;
+    let right_bound = 0.;
+
+    player_transform.translation.x = new_paddle_position.clamp(left_bound, right_bound);
 }
