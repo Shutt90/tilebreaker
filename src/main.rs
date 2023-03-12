@@ -59,9 +59,12 @@ fn add_player_get_window(mut commands: Commands, window_query: Query<&Window>) {
     });
 }
 
-fn move_player(keyboard_input: Res<Input<KeyCode>>, mut query: Query<&mut Transform, With<Player>>) {
+fn move_player(keyboard_input: Res<Input<KeyCode>>, mut query: Query<&mut Transform, With<Player>>, window_query: Query<&Window>) {
     let mut player_transform = query.single_mut();
     let mut direction = 0.0;
+
+    let Some(window) = window_query.get_single().ok() else { return };
+    let win_w = window.width();
 
     if keyboard_input.pressed(KeyCode::Left) || keyboard_input.pressed(KeyCode::A) {
         direction -= 1.0;
@@ -73,8 +76,8 @@ fn move_player(keyboard_input: Res<Input<KeyCode>>, mut query: Query<&mut Transf
 
     let new_paddle_position = player_transform.translation.x + direction * 500.;
 
-    let left_bound = 800.;
-    let right_bound = 0.;
+    let left_bound = win_w;
+    let right_bound = -win_w;
 
     player_transform.translation.x = new_paddle_position.clamp(left_bound, right_bound);
 }
