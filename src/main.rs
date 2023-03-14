@@ -10,6 +10,9 @@ pub struct BlockSize {
 pub struct Player;
 
 #[derive(Component)]
+pub struct Brick;
+
+#[derive(Component)]
 pub struct Ball;
 
 const SPRITE_SIZE: BlockSize = BlockSize{w:100., h:25.};
@@ -19,6 +22,8 @@ fn main() {
     .add_plugins(DefaultPlugins)
     .add_startup_system(setup)
     .add_startup_system(add_player)
+    .add_startup_system(spawn_bricks)
+
     .add_system(move_player)
     .run();
 }
@@ -96,3 +101,31 @@ fn move_player(
         player_transform.translation = translation
     }
 }
+
+fn spawn_bricks(
+    mut commands: Commands,
+    window_query: Query<&Window, With<PrimaryWindow>>,
+) {
+    let window = window_query.get_single().unwrap();
+    let brick_size: BlockSize = BlockSize{ w: window.width() / 10., h: window.height() / 30. };
+
+    for v_index in 1..4 {
+        for h_index in 1..8 {
+            commands.spawn(
+                (
+                    SpriteBundle {
+                        sprite: Sprite {
+                            color: Color::RED,
+                            custom_size: Some(Vec2::new(brick_size.w, brick_size.h)),
+                            ..default()
+                        },
+                        transform: Transform::from_xyz(h_index as f32 * 150.,  window.height() - brick_size.h - (v_index as f32 * 80.), 0.),
+                        ..default()
+                    },
+                    Brick{},
+                )
+            );
+        }
+    }
+}
+
