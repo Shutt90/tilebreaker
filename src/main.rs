@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy::sprite::MaterialMesh2dBundle;
 use bevy::window::PrimaryWindow;
 
 pub struct BlockSize {
@@ -129,3 +130,23 @@ fn spawn_bricks(
     }
 }
 
+fn spawn_ball(
+    mut commands: Commands,
+    window_query: Query<&Window, With<PrimaryWindow>>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    mut player_query: Query<&mut Transform, With<Player>>,
+) {
+    if let Ok(mut player_transform) = player_query.get_single_mut() {
+        commands.spawn(
+        (
+            MaterialMesh2dBundle {
+                mesh: meshes.add(shape::Circle::new(15.0).into()).into(),
+                material: materials.add(ColorMaterial::from(Color::PURPLE)),
+                transform: Transform::from_translation(Vec3::new(player_transform.x - SPRITE_SIZE.w / 2., player_transform - SPRITE_SIZE.y / 2., y, 0.)),
+                ..default()
+            },
+            Ball{}
+        )
+    );
+};
