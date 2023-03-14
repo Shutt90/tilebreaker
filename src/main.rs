@@ -17,6 +17,7 @@ pub struct Brick;
 pub struct Ball;
 
 const SPRITE_SIZE: BlockSize = BlockSize{w:100., h:25.};
+const BALL_RADIUS: f32 = 15.;
 
 fn main() {
     App::new()
@@ -24,6 +25,7 @@ fn main() {
     .add_startup_system(setup)
     .add_startup_system(add_player)
     .add_startup_system(spawn_bricks)
+    .add_startup_system(spawn_ball)
 
     .add_system(move_player)
     .run();
@@ -137,16 +139,17 @@ fn spawn_ball(
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut player_query: Query<&mut Transform, With<Player>>,
 ) {
-    if let Ok(mut player_transform) = player_query.get_single_mut() {
+    if let Ok(player_transform) = player_query.get_single_mut() {
+        let window = window_query.get_single().unwrap();
         commands.spawn(
         (
             MaterialMesh2dBundle {
-                mesh: meshes.add(shape::Circle::new(15.0).into()).into(),
+                mesh: meshes.add(shape::Circle::new(BALL_RADIUS).into()).into(),
                 material: materials.add(ColorMaterial::from(Color::PURPLE)),
-                transform: Transform::from_translation(Vec3::new(player_transform.x - SPRITE_SIZE.w / 2., player_transform - SPRITE_SIZE.y / 2., y, 0.)),
+                transform: Transform::from_xyz(player_transform.translation.x - SPRITE_SIZE.w / 2. - BALL_RADIUS / 2., player_transform.translation.y - SPRITE_SIZE.h / 2. - BALL_RADIUS / 2., 0.),
                 ..default()
             },
-            Ball{}
-        )
-    );
-};
+            Ball{} 
+        ));
+    };
+}
