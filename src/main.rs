@@ -1,83 +1,98 @@
-use bevy::{prelude::*, window::PrimaryWindow};
+use bevy::prelude::*;
+use bevy::window::PrimaryWindow;
 
-struct BlockSize {
-    w: f32,
-    h: f32,
-}
-
-#[derive(Resource)]
-pub struct WinSize {
+pub struct BlockSize {
     w: f32,
     h: f32,
 }
 
 #[derive(Component)]
-struct Player;
+pub struct Player;
 
 #[derive(Component)]
-struct Ball;
-
-impl Player {}
+pub struct Ball;
 
 const SPRITE_SIZE: BlockSize = BlockSize{w:100., h:25.};
 
 fn main() {
     App::new()
-    .add_plugins(DefaultPlugins.set(WindowPlugin {
-        primary_window: Some(Window {
-            title: "Tilebreaker".to_string(),
-            ..default()
-        }),
-        ..default()
-    }))
+    .add_plugins(DefaultPlugins)
     .add_startup_system(setup)
-    .add_system(add_player_get_window)
+    .add_startup_system(add_player)
     .add_system(move_player)
     .run();
 }
 
 fn setup(
     mut commands: Commands,
+    window_query: Query<&Window, With<PrimaryWindow>>
 ) {   
-    commands.spawn(Camera2dBundle::default());   
-}
+    let window = window_query.get_single().unwrap();
 
-fn add_player_get_window(mut commands: Commands, window_query: Query<&Window>) {
-    let Some(window) = window_query.get_single().ok() else { return };
-    let (win_w, win_h) = (window.width(), window.height());
-
-	commands.insert_resource(WinSize { w: win_w, h: win_h });
-    
-    commands.spawn(SpriteBundle {
-        sprite: Sprite {
-            color: Color::BLUE,
-            custom_size: Some(Vec2::new(SPRITE_SIZE.w, SPRITE_SIZE.h)),
+    commands.spawn(
+        Camera2dBundle {
+            transform: Transform::from_xyz(window.width() / 2., window.height() /2., 0.),
             ..default()
-        },
-        transform: Transform::from_translation(Vec3::new(-50., -win_h / 2. + SPRITE_SIZE.h, 0.)),
-        ..default()
-    });
+        }
+    );   
 }
 
-fn move_player(keyboard_input: Res<Input<KeyCode>>, mut query: Query<&mut Transform, With<Player>>, window_query: Query<&Window>) {
-    let mut player_transform = query.single_mut();
-    let mut direction = 0.0;
+fn add_player(
+    mut commands: Commands,
+    window_query: Query<&Window, With<PrimaryWindow>>,
+) {
+    let window = window_query.get_single().unwrap();
+    
+    commands.spawn(
+        (
+            SpriteBundle {
+                sprite: Sprite {
+                    color: Color::BLUE,
+                    custom_size: Some(Vec2::new(SPRITE_SIZE.w, SPRITE_SIZE.h)),
+                    ..default()
+                },
+                transform: Transform::from_translation(Vec3::new(window.width() / 2., SPRITE_SIZE.h, 0.)),
+                ..default()
+            },
+            Player {}
+        )
+    );
+}
 
-    let Some(window) = window_query.get_single().ok() else { return };
-    let win_w = window.width();
+fn move_player(
+    keyboard_input: Res<Input<KeyCode>>,
+    mut player_query: Query<&mut Transform, With<Player>>,
+    window_query: Query<&Window, With<PrimaryWindow>>,
+    time: Res<Time>,
+) {
+    if let Ok(mut player_transform) = player_query.get_single_mut() {
+        let mut direction = 0.0;
+    
+        let window = window_query.get_single().unwrap();
+    
+        if keyboard_input.pressed(KeyCode::Left) || keyboard_input.pressed(KeyCode::A) {
+            direction -= 1.0;
+        }
+    
+        if keyboard_input.pressed(KeyCode::Right) || keyboard_input.pressed(KeyCode::D) {
+            direction += 1.0;
+        }
+    
+        player_transform.translation.x += direction * 500. * time.delta_seconds();
 
-    if keyboard_input.pressed(KeyCode::Left) || keyboard_input.pressed(KeyCode::A) {
-        direction -= 1.0;
+        let mut translation = player_transform.translation;
+        
+        let half_player_size = SPRITE_SIZE.w / 2.;
+
+        let x_min = 0. + half_player_size;
+        let x_max = window.width() - half_player_size;
+
+        if translation.x < x_min {
+            translation.x = x_min;
+        } else if translation.x > x_max {
+            translation.x = x_max;
+        }
+
+        player_transform.translation = translation
     }
-
-    if keyboard_input.pressed(KeyCode::Right) || keyboard_input.pressed(KeyCode::D) {
-        direction += 1.0;
-    }
-
-    let new_paddle_position = player_transform.translation.x + direction * 500.;
-
-    let left_bound = win_w;
-    let right_bound = -win_w;
-
-    player_transform.translation.x = new_paddle_position.clamp(left_bound, right_bound);
 }
